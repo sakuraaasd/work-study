@@ -1,0 +1,124 @@
+Linux
+
+5.30
+
+磁盘管理
+df-h:挂载相关的指令 系统中的文件占比情况 查看的是硬盘
+/Dev/loop /snap/---
+du-h:具体的文件夹的大小 默认从当前目录开始展示路径下的具体空间占有大小
+     查看的是具体的文件夹或深入的某一层
+
+内存管理
+
+free 展示内存信息
+free-h 展示带单位的版本
+
+swap-虚拟内存-也叫缓冲区 如果物理内存不够用的话 可以通过软件的内容将硬盘里
+                         划出一部分空间当作内存使用
+
+top-除了内存缓冲区 还有cpu，任务
+
+系统信息查询
+pwd
+whoiam
+
+网络信息管理
+ifconfig 展示网络信息
+
+enpos5 系统所在网络的ip地址-可以看到路由器的具体位置 要上网的话就看这个地址
+
+127.0.0.1本机的循环网路
+
+ip address 一样的功能
+
+系统进程
+
+ps 
+ps a 查看全部进程 pass a | grep xxx
+kill 进程号-结束进程
+
+面板安装和系统管理
+
+さぶん？とれるのはgit
+        とれないものはsub
+
+1.asann bsann 分别用一个plant4d 怎么实现的呢？
+
+2.现在的nx里好像没有这个 全文检索的内容了
+
+redmine
+票 案件管理 对外 哪些公司在用 哪些组织在用 
+   课题管理 对内 自己公司的一些任务管理
+
+
+5.31
+
+docker
+sudo touch daemon.jason
+ドキュメントを編集する　倉庫を設定する
+
+sudo docker stats
+状態を確認する
+
+systemctl daemon-reload　
+systemctl restart docker.service
+
+sudo run hello-world
+
+sudo docker login - password
+入力：username password
+
+docker images 查看镜像
+
+docker ps     查看正在运行的容器
+docker ps-a   查看所有容器
+
+docker rm id
+运行镜像以后就是容器。只要有容器在，镜像就无法删除了。
+所以先删除容器再删除镜像。
+
+docker run -dit xxxx 后台启动容器
+docker exec -it xxxxx bash/sh(启动内核进行交互
+
+win log        windows+r eventvwr
+    version    windows+r winer
+
+6.03
+
+docker 设置别名
+
+sudo docker run -dit --name＝buladou ubuntu
+sudo docker -e demo＝xxx 给容器设置环境变量
+
+6.04
+
+sudo docker exec 容器id ls 直接在容器中执行一个命令 ls
+sudo docker exec 容器id pwd 直接在容器中执行一个命令 pwd
+
+sudo docker exec -it这个指令提供一个可以交互的终端 容器id bash
+
+git init 初始化一个仓库
+git add 将送往仓库的文件推上一个小推车 git add . 添加仓库里所有的文件到小推车上
+git commit -m 'xxxxx'将小推车上的文件放入仓库
+git status 观察现在的一个状态 主要是看在工作区和暂存区的一个状态
+git log 进入到仓库以后输入指令可以查看历史记录
+git commit -am 跳过暂存区 直接提交到仓库
+git reset HEAD 重置的指令  向暂存区提交了不想提交的文件 可以用reset指令撤回提交
+↑
+从add撤回
+git reset HEAD～1 可以将HEAD回调一个版本 提交的文件从仓库退回到暂存区
+git reset --soft/--mix/--hard 分别是回退仓库、仓库＋暂存区、仓库＋暂存区＋工作区
+
+git reset <commit值> 可以指定回退到哪一个位置
+git diff 对比修改前还有修改后的内容
+power automated-　rpa
+
+6.06
+
+power automated-
+
+トリガー　きっかけになる出来こと
+アクション　実際の動作
+
+6.10
+
