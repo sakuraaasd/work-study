@@ -1,6 +1,6 @@
 # 创建一个弹性 IP（EIP），用于 NAT 网关
 resource "aws_eip" "nat_2413618" {
-  vpc = true
+  
 }
 
 # 创建 NAT 网关，分配到公共子网
