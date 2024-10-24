@@ -9,6 +9,8 @@ resource "aws_instance" "example_2413618" {
     key_name = aws_key_pair.mykeypair_2413618.key_name
     #将roles绑定到ec2上
     iam_instance_profile = aws_iam_instance_profile.s3-mybucket-role-instanceprofile.name
+    #user data
+    #user_data = data.template_cloudinit_config.cloudinit-example.rendered
 }
 
 resource "aws_ebs_volume" "ebs_volume_1_2413618" {
