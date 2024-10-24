@@ -1,3 +1,4 @@
+#variable（函数名自己设置）
 ###############################################################
 #AWS访问密钥(在AWS IAM控制台中生成)
 #用于编程方式访问AWS服务，如通过AWS CLI、SDK或API。
@@ -21,4 +22,7 @@ variable "PATH_TO_PRIVATE_KEY" {
 }
 variable "AWS_REGION" {
     default = "ap-northeast-3"
+}
+variable "RDS_PASSWORD" {
+    default = "asd_2051312"
 }

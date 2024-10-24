@@ -26,3 +26,24 @@ resource "aws_security_group" "allow_ssh_2413618" {
     }
 }
 
+resource "aws_security_group" "allow_mariadb_2413618" {
+  vpc_id = aws_vpc.main_2413618.id
+  name = "allow_mariadb"
+  description = "allow_mariadb"
+  ingress = {
+    from_port = 3306
+    to_port = 3306
+    protocol = "tcp"
+    security_groups = [aws_security_group.allow_ssh_2413618.id]
+  }
+  egress = {
+    from_port = 0
+    to_port = 0
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    self = true
+  }
+  tags = {
+    Name = "allow_mariadb"
+  }
+}
