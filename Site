@@ -1,0 +1,46 @@
+const { chromium } = require('playwright');
+
+(async () => {
+  const browser = await chromium.launch({ headless: false });
+  const context = await browser.newContext({
+    storageState: 'auth.json' // 前提：你已登录并保存过状态
+  });
+
+  const page = await context.newPage();
+
+  // 替换为你的 Excel Online 网址（.xlsx 文件）
+  await page.goto('https://fsio365.sharepoint.com/:x:/r/sites/PLATON4D/...');
+
+  // 等待 Excel 加载完成
+  await page.waitForTimeout(8000); // Excel Online 加载比较慢
+
+  const aLinks = [];
+
+  // 选中 A1 单元格
+  await page.click('[aria-label="A1"]');
+
+  // 假设我们要读取前 30 行（可按需调整）
+  for (let i = 0; i < 30; i++) {
+    // 获取当前单元格的内容（包括超链接）
+    const cellContent = await page.evaluate(() => {
+      const selection = document.querySelector('[aria-selected="true"]');
+      return selection ? selection.innerHTML : '';
+    });
+
+    // 提取其中的 .aspx 超链接
+    const match = cellContent.match(/https:\/\/[^"]+\.aspx/);
+    if (match) {
+      aLinks.push(match[0]);
+    }
+
+    // 移动到下一行（A2, A3, A4...）
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(200); // 稍微等待一下渲染
+  }
+
+  // 打印所有 A 列中的 .aspx 超链接
+  console.log('\nA列中的 .aspx 超链接如下:');
+  aLinks.forEach(link => console.log(link));
+
+  await browser.close();
+})();
