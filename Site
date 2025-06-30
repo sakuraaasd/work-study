@@ -7,12 +7,12 @@ const { chromium } = require('playwright');
 
     // 1. 登录 Microsoft 365
     await page.goto('https://login.microsoftonline.com/');
-    await page.fill('input[type="email"]', 'choka@fsi.co.jp');
+    await page.fill('input[type="email"]', '');
     await page.click('input[type="submit"]');
     await page.waitForTimeout(2000);
 
     // 2. 密码输入
-    await page.fill('input[type="password"]', 'AIshenghuo1997.');
+    await page.fill('input[type="password"]', '');
     await page.click('input[type="submit"]');
     await page.waitForTimeout(2000);
 
