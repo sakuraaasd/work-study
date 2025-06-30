@@ -1,68 +1,94 @@
 const { chromium } = require('playwright');
+const Excel = require('exceljs');
+const fs = require('fs');
 
-(async () => {
-    const browser = await chromium.launch({ headless: false }); // 可见浏览器调试
+const EXCEL_FILE = 'Book2.xlsx';
+const OUTPUT_FILE = 'all_sub_links.json';
+
+async function loginAndSaveState() {
+    const browser = await chromium.launch({ headless: false });
     const context = await browser.newContext({ permissions: ['clipboard-read'] });
     const page = await context.newPage();
 
-    // 1. 登录 Microsoft 365
+    console.log(' 正在登录 Microsoft 365...');
     await page.goto('https://login.microsoftonline.com/');
-    await page.fill('input[type="email"]', '');
+    await page.fill('input[type="email"]', 'xxx');
     await page.click('input[type="submit"]');
     await page.waitForTimeout(2000);
 
-    // 2. 密码输入
-    await page.fill('input[type="password"]', '');
+    await page.fill('input[type="password"]', 'xxx');
     await page.click('input[type="submit"]');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
 
-    // 3. 是否保持登录（如有）
     try {
-        await page.click('input[value="Yes"]', { timeout: 3000 });
-    } catch (e) {
-        console.log('跳过“保持登录”步骤');
+        await page.click('input[value="Yes"]', { timeout: 5000 });
+    } catch (e) {}
+
+    await context.storageState({ path: 'auth.json' });
+    await browser.close();
+    console.log(' 登录完成，状态已保存');
+}
+
+async function extractUrlsFromExcel(filePath) {
+    const workbook = new Excel.Workbook();
+    await workbook.xlsx.readFile(filePath);
+    const worksheet = workbook.getWorksheet(1);
+
+    const urls = [];
+    worksheet.eachRow((row, rowNumber) => {
+        const cell = row.getCell(1);
+        if (cell && cell.hyperlink && cell.hyperlink.includes('.aspx')) {
+            urls.push(cell.hyperlink);
+        }
+    });
+
+    console.log(` 共提取到 ${urls.length} 个URL`);
+    return urls;
+}
+
+async function extractLinksFromPage(url, context) {
+    const page = await context.newPage();
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+    const links = await page.$$eval('a', anchors =>
+        anchors.map(a => a.href).filter(href => href.startsWith('http'))
+    );
+
+    await page.close();
+    return [...new Set(links)]; // 去重
+}
+
+(async () => {
+    // 第一次登录（只需运行一次）
+    if (!fs.existsSync('auth.json')) {
+        await loginAndSaveState();
     }
 
-    // 4. 登录完成后保存状态（以后可复用）
-    await context.storageState({ path: 'auth.json' });
+    // 提取父链接
+    const parentUrls = await extractUrlsFromExcel(EXCEL_FILE);
 
-    // 5. 使用新 context 自动登录
-    await browser.close();
+    // 登录后的浏览器上下文
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext({ storageState: 'auth.json' });
 
-    const browser2 = await chromium.launch({ headless: false });
-    const context2 = await browser2.newContext({
-        storageState: 'auth.json',
-        permissions: ['clipboard-read'],
-    });
-    const page2 = await context2.newPage();
+    const results = {};
 
-    // 6. 打开 Excel 文件（替换为你的实际链接）
-    await page2.goto('https://fsio365.sharepoint.com/:x:/r/sites/PLATON4D/_layouts/15/Doc.aspx?sourcedoc=%7B3A2998AC-990A-4BA7-B82D-619DBA97F32D&file=Book2.xlsx&action=default&mobileredirect=true');
-    await page2.waitForTimeout(10000); // 等待加载完毕
-
-    const aLinks = [];
-
-    // 7. 遍历 A1~A139
-    for (let i = 1; i <= 139; i++) {
-        const cellSelector = `[aria-label="A${i}"]`;
-        const cell = await page2.$(cellSelector);
-        if (!cell) continue;
-
-        await cell.click();
-        await page2.keyboard.press('Control+C');
-        await page2.waitForTimeout(300);
-
-        const copied = await page2.evaluate(() => navigator.clipboard.readText());
-        const match = copied.match(/https:\/\/[^\s"]+\.aspx/);
-        if (match) {
-            console.log(`A${i}: ${match[0]}`);
-            aLinks.push(match[0]);
+    for (let i = 0; i < parentUrls.length; i++) {
+        const parentUrl = parentUrls[i];
+        try {
+            console.log(` [${i + 1}/${parentUrls.length}] 处理: ${parentUrl}`);
+            const childLinks = await extractLinksFromPage(parentUrl, context);
+            results[parentUrl] = childLinks;
+            console.log(` 提取到 ${childLinks.length} 个子链接`);
+        } catch (err) {
+            console.warn(`⚠ 处理失败: ${parentUrl}`);
+            results[parentUrl] = [];
         }
     }
 
-    console.log('\n A列中的 .aspx 超链接如下:');
-    aLinks.forEach(link => console.log(link));
+    await browser.close();
 
-    await browser2.close();
+    // 保存结果
+    fs.writeFileSync(OUTPUT_FILE, JSON.stringify(results, null, 2), 'utf-8');
+    console.log(` 所有子链接已保存到 ${OUTPUT_FILE}`);
 })();
-
