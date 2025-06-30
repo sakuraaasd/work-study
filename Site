@@ -1,43 +1,68 @@
 const { chromium } = require('playwright');
 
 (async () => {
-    const browser = await chromium.launch({ headless: true }); // 为了调试，将headless设置为true
-    const context = await browser.newContext({ storageState: 'auth.json' }); 
+    const browser = await chromium.launch({ headless: false }); // 可见浏览器调试
+    const context = await browser.newContext({ permissions: ['clipboard-read'] });
     const page = await context.newPage();
-    
-    // 请替换为Excel Online的URL（.xlsx文件）
-    await page.goto('https://fsio365.sharepoint.com/:x:/r/sites/PLATON4D/_layouts/15/Doc.aspx?sourcedoc=%7B3A2998AC-990A-4BA7-B82D-619DBA97F32D&file=Book2.xlsx&action=default&mobileredirect=true');
-    
-    // 等待Excel加载完成
-    await page.waitForTimeout(8000); // Excel Online加载较慢
-    
+
+    // 1. 登录 Microsoft 365
+    await page.goto('https://login.microsoftonline.com/');
+    await page.fill('input[type="email"]', 'choka@fsi.co.jp');
+    await page.click('input[type="submit"]');
+    await page.waitForTimeout(2000);
+
+    // 2. 密码输入
+    await page.fill('input[type="password"]', 'AIshenghuo1997.');
+    await page.click('input[type="submit"]');
+    await page.waitForTimeout(2000);
+
+    // 3. 是否保持登录（如有）
+    try {
+        await page.click('input[value="Yes"]', { timeout: 3000 });
+    } catch (e) {
+        console.log('跳过“保持登录”步骤');
+    }
+
+    // 4. 登录完成后保存状态（以后可复用）
+    await context.storageState({ path: 'auth.json' });
+
+    // 5. 使用新 context 自动登录
+    await browser.close();
+
+    const browser2 = await chromium.launch({ headless: false });
+    const context2 = await browser2.newContext({
+        storageState: 'auth.json',
+        permissions: ['clipboard-read'],
+    });
+    const page2 = await context2.newPage();
+
+    // 6. 打开 Excel 文件（替换为你的实际链接）
+    await page2.goto('https://fsio365.sharepoint.com/:x:/r/sites/PLATON4D/_layouts/15/Doc.aspx?sourcedoc=%7B3A2998AC-990A-4BA7-B82D-619DBA97F32D&file=Book2.xlsx&action=default&mobileredirect=true');
+    await page2.waitForTimeout(10000); // 等待加载完毕
+
     const aLinks = [];
-    
-    // 读取前提是139行（可根据需要调整）
-    for (let i = 0; i < 139; i++) {
-        // 选择A列的单元格
-        await page.click(`[aria-label="A${i + 1}"]`);
-        
-        // 获取当前单元格的内容（包括超链接）
-        const cellContent = await page.evaluate(() => {
-            const selection = document.querySelector('[aria-selected="true"]');
-            return selection ? selection.innerText : '';
-        });
-        
-        // 提取 .aspx超链接
-        const match = cellContent.match(/https:\/\/[^"]+\.aspx/);
+
+    // 7. 遍历 A1~A139
+    for (let i = 1; i <= 139; i++) {
+        const cellSelector = `[aria-label="A${i}"]`;
+        const cell = await page2.$(cellSelector);
+        if (!cell) continue;
+
+        await cell.click();
+        await page2.keyboard.press('Control+C');
+        await page2.waitForTimeout(300);
+
+        const copied = await page2.evaluate(() => navigator.clipboard.readText());
+        const match = copied.match(/https:\/\/[^\s"]+\.aspx/);
         if (match) {
+            console.log(`A${i}: ${match[0]}`);
             aLinks.push(match[0]);
         }
-        
-        await page.waitForTimeout(500); // 等待渲染
     }
-    
-    // 显示A列的所有 .aspx超链接
-    console.log('\nA列的 .aspx超链接如下:');
+
+    console.log('\n A列中的 .aspx 超链接如下:');
     aLinks.forEach(link => console.log(link));
-    
-    await browser.close();
-    console.log('浏览器已关闭');
+
+    await browser2.close();
 })();
 
