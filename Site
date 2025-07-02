@@ -1,94 +1,18 @@
-const { chromium } = require('playwright');
-const Excel = require('exceljs');
-const fs = require('fs');
+矢野さん  
+ご確認ありがとうございます。張です。
 
-const EXCEL_FILE = 'Book2.xlsx';
-const OUTPUT_FILE = 'all_sub_links.json';
+ご指摘いただいた「No such file or directory」エラーの原因について調査しましたところ、  
+スクリプト内で `dependency-check` ツールを一時フォルダ（${DEST_DIR}）に展開したあと、  
+`cp` コマンドで `/platon4d/lib/jenkins/workspace/Dependency-Check-Update/dependency-check` を指定してツールをコピーしようとしていることがわかりました。
 
-async function loginAndSaveState() {
-    const browser = await chromium.launch({ headless: false });
-    const context = await browser.newContext({ permissions: ['clipboard-read'] });
-    const page = await context.newPage();
+しかし、このパスは Jenkins の実行環境によっては存在しない可能性があり、  
+実際の作業ディレクトリ（workspace）が異なると `cp` 先が見つからず、今回のようなエラーになります。
 
-    console.log(' 正在登录 Microsoft 365...');
-    await page.goto('https://login.microsoftonline.com/');
-    await page.fill('input[type="email"]', 'xxx');
-    await page.click('input[type="submit"]');
-    await page.waitForTimeout(2000);
+そのため、スクリプト内で定義されている変数 ${DEST_DIR} を使用することで、  
+より柔軟かつ安定した構成にすることが可能です。
 
-    await page.fill('input[type="password"]', 'xxx');
-    await page.click('input[type="submit"]');
-    await page.waitForTimeout(3000);
+# 修正前（パスが固定されている）
+cp -pr /platon4d/lib/jenkins/workspace/Dependency-Check-Update/dependency-check /platon4d/lib/jenkins/tools
 
-    try {
-        await page.click('input[value="Yes"]', { timeout: 5000 });
-    } catch (e) {}
-
-    await context.storageState({ path: 'auth.json' });
-    await browser.close();
-    console.log(' 登录完成，状态已保存');
-}
-
-async function extractUrlsFromExcel(filePath) {
-    const workbook = new Excel.Workbook();
-    await workbook.xlsx.readFile(filePath);
-    const worksheet = workbook.getWorksheet(1);
-
-    const urls = [];
-    worksheet.eachRow((row, rowNumber) => {
-        const cell = row.getCell(1);
-        if (cell && cell.hyperlink && cell.hyperlink.includes('.aspx')) {
-            urls.push(cell.hyperlink);
-        }
-    });
-
-    console.log(` 共提取到 ${urls.length} 个URL`);
-    return urls;
-}
-
-async function extractLinksFromPage(url, context) {
-    const page = await context.newPage();
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-
-    const links = await page.$$eval('a', anchors =>
-        anchors.map(a => a.href).filter(href => href.startsWith('http'))
-    );
-
-    await page.close();
-    return [...new Set(links)]; // 去重
-}
-
-(async () => {
-    // 第一次登录（只需运行一次）
-    if (!fs.existsSync('auth.json')) {
-        await loginAndSaveState();
-    }
-
-    // 提取父链接
-    const parentUrls = await extractUrlsFromExcel(EXCEL_FILE);
-
-    // 登录后的浏览器上下文
-    const browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext({ storageState: 'auth.json' });
-
-    const results = {};
-
-    for (let i = 0; i < parentUrls.length; i++) {
-        const parentUrl = parentUrls[i];
-        try {
-            console.log(` [${i + 1}/${parentUrls.length}] 处理: ${parentUrl}`);
-            const childLinks = await extractLinksFromPage(parentUrl, context);
-            results[parentUrl] = childLinks;
-            console.log(` 提取到 ${childLinks.length} 个子链接`);
-        } catch (err) {
-            console.warn(`⚠ 处理失败: ${parentUrl}`);
-            results[parentUrl] = [];
-        }
-    }
-
-    await browser.close();
-
-    // 保存结果
-    fs.writeFileSync(OUTPUT_FILE, JSON.stringify(results, null, 2), 'utf-8');
-    console.log(` 所有子链接已保存到 ${OUTPUT_FILE}`);
-})();
+# 修正後（変数を使って柔軟に対応）
+cp -pr "$DEST_DIR" /platon4d/lib/jenkins/tools
