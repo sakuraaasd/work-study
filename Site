@@ -1,18 +1,3 @@
-矢野さん  
-ご確認ありがとうございます。張です。
-
-ご指摘いただいた「No such file or directory」エラーの原因について調査しましたところ、  
-スクリプト内で `dependency-check` ツールを一時フォルダ（${DEST_DIR}）に展開したあと、  
-`cp` コマンドで `/platon4d/lib/jenkins/workspace/Dependency-Check-Update/dependency-check` を指定してツールをコピーしようとしていることがわかりました。
-
-しかし、このパスは Jenkins の実行環境によっては存在しない可能性があり、  
-実際の作業ディレクトリ（workspace）が異なると `cp` 先が見つからず、今回のようなエラーになります。
-
-そのため、スクリプト内で定義されている変数 ${DEST_DIR} を使用することで、  
-より柔軟かつ安定した構成にすることが可能です。
-
-# 修正前（パスが固定されている）
-cp -pr /platon4d/lib/jenkins/workspace/Dependency-Check-Update/dependency-check /platon4d/lib/jenkins/tools
-
-# 修正後（変数を使って柔軟に対応）
-cp -pr "$DEST_DIR" /platon4d/lib/jenkins/tools
+echo "コピー先のモジュールのバージョンチェック:" /platon4d/lib/jenkins/tools/dependency-check/bin/dependency-check.sh --version echo "/platon4d/lib/jenkins/tools にcopyした" # === 一時的フォルダーをクリーニング === rm -rf "$DOWNLOAD_DIR
+"15:04:21 子フォルダの内容を移動している... 15:04:21 インストール完了！DependencyCheck 12.1.3 以下のパスにインストールされた： 15:04:21 /platon4d/lib/jenkins/workspace/Dependency-Check-Update/dependency-check 15:04:22 コピー先のモジュールのバージョンチェック: /platon4d/lib/jenkins/tools/dependency-check/bin/dependency-check.sh --version 15:04:22 /platon4d/lib/jenkins/tools にcopyした 15:04:22 Finished: SUCCESS
+[ec2-user@pyxis502p /platon4d]$ sudo ./test.sh コピー先のモジュールのバージョンチェック: 15:52:43,315 |-INFO in ch.qos.logback.classic.LoggerContext[dependency-check] - Could NOT find resource [logb 15:52:43,315 |-INFO in ch.qos.logback.classic.LoggerContext[dependency-check] - Found resource [logback.xml] 15:52:43,316 |-WARN in ch.qos.logback.classic.LoggerContext[dependency-check] - Resource [logback.xml] occurs 15:52:43,316 |-WARN in ch.qos.logback.classic.LoggerContext[dependency-check] - Resource [logback.xml] occurs 15:52:43,316 |-WARN in ch.qos.logback.classic.LoggerContext[dependency-check] - Resource [logback.xml] occurs 15:52:43,337 |-INFO in ch.qos.logback.core.joran.spi.ConfigurationWatchList@68bbe345 - URL [jar:file:/platon4 15:52:43,450 |-INFO in ch.qos.logback.classic.joran.action.ConfigurationAction - debug attribute not set 15:52:43,457 |-INFO in ch.qos.logback.classic.joran.action.ContextNameAction - Setting logger context name as 15:52:43,457 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - About to instantiate appender of typ 15:52:43,463 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - Naming appender as [console] 15:52:43,479 |-INFO in ch.qos.logback.core.joran.action.NestedComplexPropertyIA - Assuming default type [ch.q 15:52:43,507 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting level of logger [org.apache 15:52:43,507 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting level of logger [org.apache 15:52:43,507 |-INFO in ch.qos.logback.classic.joran.action.RootLoggerAction - Setting level of ROOT logger to 15:52:43,507 |-INFO in ch.qos.logback.core.joran.action.AppenderRefAction - Attaching appender named [console 15:52:43,508 |-INFO in ch.qos.logback.classic.joran.action.ConfigurationAction - End of configuration. 15:52:43,508 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@30b8a058 - Registering current configur Dependency-Check Core version 12.1.0
